@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"net/http"
 	"strings"
@@ -31,14 +30,8 @@ func main() {
 	authService := auth.NewService()
 
 	campaignRepository := campaign.NewRepository(db)
-	campaigns, err := campaignRepository.FindByUserID(5)
-
-	for _, campaign := range campaigns {
-		fmt.Println("Campaign name:", campaign.Name)
-		if len(campaign.CampaignImages) != 0 {
-			fmt.Println(campaign.CampaignImages[0].FileName)
-		}
-	}
+	campaignService := campaign.NewService(campaignRepository)
+	campaignService.GetCampaigns(5)
 	userHandler := handler.NewUserHandler(userService, authService)
 	router := gin.Default()
 	api := router.Group("/api/v1")
