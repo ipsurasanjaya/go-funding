@@ -45,6 +45,7 @@ func main() {
 	api.POST("/email_checkers", userHandler.CheckEmailAvailability)
 	api.POST("/avatars", authMiddleware(authService, userService), userHandler.UploadAvatar)
 
+	api.POST("/campaigns", authMiddleware(authService, userService), campaignHandler.CreateCampaign)
 	api.GET("/campaigns", campaignHandler.GetCampaigns)
 	api.GET("/campaigns/:id", campaignHandler.GetCampaignByID)
 	router.Run()
@@ -68,7 +69,7 @@ func authMiddleware(authService auth.Service, userService user.Service) gin.Hand
 
 		token, err := authService.ValidateToken(tokenString)
 		if err != nil {
-			apiResponse := helper.ApiResponse("Inputted is not valid", http.StatusUnauthorized, "error", nil)
+			apiResponse := helper.ApiResponse("Token is not valid", http.StatusUnauthorized, "error", nil)
 			c.AbortWithStatusJSON(http.StatusUnauthorized, apiResponse)
 			return
 		}

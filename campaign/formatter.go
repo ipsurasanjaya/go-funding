@@ -79,7 +79,11 @@ func CampaignDetailsFormatter(campaign Campaign) FormatCampaignDetails {
 	if len(campaign.CampaignImages) != 0 {
 		campaignDetails.FileName = campaign.CampaignImages[0].FileName
 	}
-	campaignDetails.Perks = strings.Split(campaign.Perks, ", ")
+	var perks []string
+	for _, perk := range strings.Split(campaign.Perks, ",") {
+		perks = append(perks, strings.TrimSpace(perk))
+	}
+	campaignDetails.Perks = perks
 	campaignDetails.User = campaignUserFormatter(campaign)
 	campaignDetails.Images = campaignImagesFormatter(campaign)
 
