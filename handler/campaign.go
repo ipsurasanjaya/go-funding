@@ -73,3 +73,43 @@ func (h *campaignHandler) CreateCampaign(c *gin.Context) {
 	campaignResponse := helper.ApiResponse("Campaign successfuly created", http.StatusCreated, "success", campaignFormatter)
 	c.JSON(http.StatusCreated, campaignResponse)
 }
+
+func (h *campaignHandler) UpdateCampaign(c *gin.Context) {
+	var (
+		campaignInput campaign.CampaignInput
+	)
+
+	campaignID, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		errMessage := gin.H{"errors": err}
+		response := helper.ApiResponse("Update campaign failed", http.StatusUnprocessableEntity, "error", errMessage)
+		c.JSON(http.StatusUnprocessableEntity, response)
+		return
+	}
+
+	err = c.ShouldBindJSON(&campaignInput)
+	if err != nil {
+		if err != nil {
+			errors := helper.FormatValidationError(err)
+			errMessage := gin.H{"errors": errors}
+			response := helper.ApiResponse("Update campaign failed", http.StatusUnprocessableEntity, "error", errMessage)
+			c.JSON(http.StatusUnprocessableEntity, response)
+			return
+		}
+	}
+
+	currentUser := c.MustGet("currentUser").(user.User)
+	campaignInput.User = currentUser
+
+	updatedCampaign, err := h.service.UpdateCampaign(campaignInput, campaignID)
+	if err != nil {
+		errMessage := gin.H{"errors": err.Error()}
+		response := helper.ApiResponse("Update campaign failed", http.StatusUnprocessableEntity, "error", errMessage)
+		c.JSON(http.StatusUnprocessableEntity, response)
+		return
+	}
+
+	campaignFormatter := campaign.CampaignFormatter(updatedCampaign)
+	campaignResponse := helper.ApiResponse("Campaign successfuly created", http.StatusCreated, "success", campaignFormatter)
+	c.JSON(http.StatusCreated, campaignResponse)
+}
