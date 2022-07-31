@@ -4,6 +4,7 @@ import (
 	"crowdfunding/campaign"
 	"crowdfunding/helper"
 	"crowdfunding/user"
+	"fmt"
 	"net/http"
 	"strconv"
 
@@ -112,4 +113,50 @@ func (h *campaignHandler) UpdateCampaign(c *gin.Context) {
 	campaignFormatter := campaign.CampaignFormatter(updatedCampaign)
 	campaignResponse := helper.ApiResponse("Campaign successfuly created", http.StatusCreated, "success", campaignFormatter)
 	c.JSON(http.StatusCreated, campaignResponse)
+}
+
+func (h *campaignHandler) CreateCampaignImage(c *gin.Context) {
+	var input campaign.CampaignImageInput
+
+	err := c.ShouldBind(&input)
+	if err != nil {
+		errors := helper.FormatValidationError(err)
+		errMessage := gin.H{"errors": errors}
+		response := helper.ApiResponse("Failed to upload campaign image binding", http.StatusUnprocessableEntity, "error", errMessage)
+		c.JSON(http.StatusUnprocessableEntity, response)
+		return
+	}
+	currentUser := c.MustGet("currentUser").(user.User)
+	input.User = currentUser
+	userId := currentUser.Id
+
+	file, err := c.FormFile("file")
+	if err != nil {
+		data := gin.H{"is_uploaded": false}
+		response := helper.ApiResponse("Failed to upload campaign image formfile", http.StatusBadRequest, "error", data)
+		c.JSON(http.StatusBadRequest, response)
+		return
+	}
+
+	path := fmt.Sprintf("images/%d-%s", userId, file.Filename)
+
+	err = c.SaveUploadedFile(file, path)
+	if err != nil {
+		data := gin.H{"is_uploaded": false}
+		response := helper.ApiResponse("Failed to upload campaign image save uploaded file", http.StatusBadRequest, "error", data)
+		c.JSON(http.StatusBadRequest, response)
+		return
+	}
+
+	_, err = h.service.CreateCampaignImage(input, path)
+	if err != nil {
+		data := gin.H{"is_uploaded": false, "errors": err.Error()}
+		response := helper.ApiResponse("Failed to upload campaign image service", http.StatusBadRequest, "error", data)
+		c.JSON(http.StatusBadRequest, response)
+		return
+	}
+
+	data := gin.H{"is_uploaded": true}
+	response := helper.ApiResponse("Campaign image successfuly uploaded", http.StatusOK, "succes", data)
+	c.JSON(http.StatusOK, response)
 }
