@@ -4,10 +4,11 @@ import (
 	"crowdfunding/user"
 	"strconv"
 
-	"github.com/veritrans/go-midtrans"
+	midtrans "github.com/veritrans/go-midtrans"
 )
 
-type service struct{}
+type service struct {
+}
 
 type Service interface {
 	GetPaymentURL(transaction Transaction, user user.User) (string, error)

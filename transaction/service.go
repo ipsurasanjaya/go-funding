@@ -5,6 +5,7 @@ import (
 	"crowdfunding/payment"
 	"errors"
 	"fmt"
+	"strconv"
 
 	"github.com/thanhpk/randstr"
 )
@@ -13,6 +14,7 @@ type Service interface {
 	GetTransactionByCampaignID(input GetCampaignTransactionInput) ([]Transaction, error)
 	GetTransactionByUserID(userID int) ([]Transaction, error)
 	CreateTransaction(input CreateTransactionInput) (Transaction, error)
+	ProcessPayment(input TransactionNotificationInput) error
 }
 
 type service struct {
@@ -65,7 +67,7 @@ func (s *service) CreateTransaction(input CreateTransactionInput) (Transaction, 
 	transaction.UserID = input.User.Id
 	transaction.CampaignID = input.CampaignID
 	transaction.Amount = input.Amount
-	transaction.TrxCode = GenerateTransactionCode()
+	transaction.TrxCode = generateTransactionCode()
 	transaction.Status = "pending"
 
 	newTransaction, err := s.repository.Save(transaction)
@@ -91,7 +93,46 @@ func (s *service) CreateTransaction(input CreateTransactionInput) (Transaction, 
 	return newTransaction, nil
 }
 
-func GenerateTransactionCode() string {
+func (s *service) ProcessPayment(input TransactionNotificationInput) error {
+	transaction_id, _ := strconv.Atoi(input.OrderID)
+
+	transaction, err := s.repository.GetByID(transaction_id)
+	if err != nil {
+		return err
+	}
+
+	if input.PaymentType == "credit_card" && input.TransactionStatus == "capture" && input.FraudStatus == "accept" {
+		transaction.Status = "paid"
+	} else if input.TransactionStatus == "settlement" && input.FraudStatus == "accept" {
+		transaction.Status = "paid"
+	} else if input.TransactionStatus == "cancel" || input.TransactionStatus == "deny" || input.TransactionStatus == "expire" {
+		transaction.Status = "canceled"
+	}
+
+	updatedTransaction, err := s.repository.Update(transaction)
+	if err != nil {
+		return err
+	}
+
+	campaign, err := s.campaignRepository.FindByID(updatedTransaction.CampaignID)
+	if err != nil {
+		return err
+	}
+
+	if updatedTransaction.Status == "paid" {
+		campaign.BackerCount += 1
+		campaign.CurrentAmount += updatedTransaction.Amount
+
+		_, err := s.campaignRepository.Update(campaign)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func generateTransactionCode() string {
 	const codeLength = 15
 	var (
 		trxCode    string

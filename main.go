@@ -37,9 +37,8 @@ func main() {
 	campaignService := campaign.NewService(campaignRepository)
 	campaignHandler := handler.NewCampaignHandler(campaignService)
 
-	paymentService := payment.NewService()
-
 	transactionRepository := transaction.NewRepository(db)
+	paymentService := payment.NewService()
 	transactionService := transaction.NewService(transactionRepository, campaignRepository, paymentService)
 	transactionHandler := handler.NewTransactionHandler(transactionService)
 
@@ -62,6 +61,7 @@ func main() {
 	api.GET("/campaigns/:id/transactions", authMiddleware(authService, userService), transactionHandler.GetTransactionByCampaignID)
 	api.GET("/transactions", authMiddleware(authService, userService), transactionHandler.GetTransactionByUserID)
 	api.POST("/transactions", authMiddleware(authService, userService), transactionHandler.CreateTransaction)
+	api.POST("/transactions/notifications", transactionHandler.CreateNotification)
 	router.Run()
 }
 

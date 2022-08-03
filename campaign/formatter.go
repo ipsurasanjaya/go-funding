@@ -47,6 +47,7 @@ type FormatCampaignDetails struct {
 	Name          string        `json:"name"`
 	Summary       string        `json:"summary"`
 	Slug          string        `json:"slug"`
+	BackerCount   int           `json:"backer_count"`
 	TargetAmmount int           `json:"target_amount"`
 	UserID        int           `json:"user_id"`
 	Perks         []string      `json:"perks"`
@@ -74,6 +75,7 @@ func CampaignDetailsFormatter(campaign Campaign) FormatCampaignDetails {
 		Slug:          campaign.Slug,
 		TargetAmmount: campaign.TargetAmount,
 		UserID:        campaign.UserID,
+		BackerCount:   campaign.BackerCount,
 	}
 
 	if len(campaign.CampaignImages) != 0 {
