@@ -59,3 +59,29 @@ func (h *handler) GetTransactionByUserID(c *gin.Context) {
 	response := helper.ApiResponse("Success get user's transactions", http.StatusOK, "success", transactionsFormatter)
 	c.JSON(http.StatusOK, response)
 }
+
+func (h *handler) CreateTransaction(c *gin.Context) {
+	var input transaction.CreateTransactionInput
+
+	err := c.ShouldBindJSON(&input)
+	if err != nil {
+		apiResponse := helper.ApiResponse("Invalid input", http.StatusBadRequest, "error", nil)
+		c.JSON(http.StatusBadRequest, apiResponse)
+		return
+	}
+
+	currentUser := c.MustGet("currentUser").(user.User)
+	input.User = currentUser
+
+	newTransaction, err := h.service.CreateTransaction(input)
+	if err != nil {
+		errors := gin.H{"errors": err.Error()}
+		apiResponse := helper.ApiResponse("Failed create a new transaction", http.StatusBadRequest, "error", errors)
+		c.JSON(http.StatusBadRequest, apiResponse)
+		return
+	}
+
+	formatTransaction := transaction.CreateTransactionFormatter(newTransaction)
+	apiResponse := helper.ApiResponse("Successfuly create new transaction", http.StatusOK, "success", formatTransaction)
+	c.JSON(http.StatusOK, apiResponse)
+}
